@@ -1,13 +1,15 @@
 const mongoose = require("mongoose");
 
-const annonceSchema = mongoose.Schema({
+const connectionString = mongoose.Schema({
   titre: String,
   description: String,
   adresse: String,
   personne: Number,
   prix: Number,
+  // image: String,
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "users" },
 });
 
-const Annonce = mongoose.model("annonce", annonceSchema);
+const Annonce = mongoose.model("annonces", connectionString);
 
 module.exports = Annonce;
