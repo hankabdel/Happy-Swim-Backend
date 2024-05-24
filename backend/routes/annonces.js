@@ -32,6 +32,16 @@ router.post("/add", (req, res) => {
   });
 });
 
+router.get("/recover", (req, res) => {
+  Annonce.find()
+    .then((data) => {
+      res.json({ result: true, data: data });
+    })
+    .catch((error) => {
+      res.json({ result: false, error: error.message });
+    });
+});
+
 router.get("/:_id", (res, req) => {
   console.log("hello");
   const id = req.params.id;
