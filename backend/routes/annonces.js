@@ -2,8 +2,11 @@ var express = require("express");
 var router = express.Router();
 const { checkBody } = require("../modules/checkBody");
 const Annonce = require("../models/annonces");
+const User = require("../models/users");
 
-router.post("/add", (req, res) => {
+router.post("/add", async (req, res) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
   if (
     !checkBody(req.body, [
       "titre",
@@ -17,6 +20,11 @@ router.post("/add", (req, res) => {
     res.json({ result: false, error: "Champs manquants ou vides" });
     return;
   }
+  //interroger la BDD
+  //Chercher id de l'utilisateur
+  //relier l'id utilisateur à l'annonce
+
+  const user = await User.findOne({ token: token });
 
   const newAnnonce = new Annonce({
     titre: req.body.titre,
@@ -24,11 +32,12 @@ router.post("/add", (req, res) => {
     personne: req.body.personne,
     prix: req.body.prix,
     image: req.body.image,
-    userId: req.body.userId,
+    userId: user._id,
   });
 
   newAnnonce.save().then((data) => {
-    res.json({ result: true, userID: data.userID });
+    res.json({ result: true, data: data });
+    console.log("*********************", "coucou", "**********************");
   });
 });
 
