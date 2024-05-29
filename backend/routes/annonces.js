@@ -11,7 +11,7 @@ router.post("/add", async (req, res) => {
     !checkBody(req.body, [
       "titre",
       "description",
-      "adresse",
+      "ville",
       "personne",
       "prix",
       // "image",
@@ -30,8 +30,9 @@ router.post("/add", async (req, res) => {
     titre: req.body.titre,
     description: req.body.description,
     personne: req.body.personne,
+    ville: req.body.ville,
     prix: req.body.prix,
-    image: req.body.image,
+    // image: req.body.image,
     userId: user._id,
   });
 
@@ -51,31 +52,28 @@ router.get("/recover", (req, res) => {
     });
 });
 
-router.get("/:_id", (res, req) => {
-  console.log("hello");
-  const id = req.params.id;
-  Annonce.findOne({ _id: id }).then((data) => {
-    res.json({ result: true, annonce: data });
-  });
-});
+router.delete("/delete", async (req, res) => {
+  //comparer token
+  //recuper userID
+  //chercher dans Annoce avec userID
+  //si true je supprime
 
-router.delete("/:_id", async (req, res) => {
-  const id = req.params._id;
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
 
-  try {
-    const deletedDoc = await Annonce.deleteOne({ _id: id });
-    console.log("Deleted Document Info:", deletedDoc);
+  const user = await User.findOne({ token: token });
+  console.log("USER", user._id);
 
-    if (deletedDoc && deletedDoc.deletedCount > 0) {
-      const data = await Annonce.find();
-      console.log("Remaining Annonces:", data);
-      res.json({ result: true, annonces: data });
-    } else {
-      res.status(404).json({ result: false, error: "Annonce non trouvée" });
-    }
-  } catch (error) {
-    console.error("Erreur lors de la suppression de l'annonce:", error);
-    res.status(500).json({ result: false, error: "Erreur interne du serveur" });
+  const annonce = await Annonce.findOne({ userId: user._id });
+  console.log("annonce", annonce);
+  if (annonce) {
+    await Annonce.deleteOne({ annonceId: annonce._id });
+
+    res.json({
+      result: true,
+      message: "Annonce supprimée",
+      // annonceId: annonce._id,
+    });
   }
 });
 

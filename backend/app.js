@@ -8,6 +8,7 @@ require("./models/connection");
 var indexRouter = require("./routes/index");
 var usersRouter = require("./routes/users");
 var annoncesRouter = require("./routes/annonces");
+var reservationsRouter = require("./routes/reservations");
 
 var app = express();
 
@@ -23,4 +24,5 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use("/", indexRouter);
 app.use("/users", usersRouter);
 app.use("/annonces", annoncesRouter);
+app.use("/", reservationsRouter);
 module.exports = app;

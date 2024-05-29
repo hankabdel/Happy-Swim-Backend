@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const connectionString = mongoose.Schema({
   titre: String,
   description: String,
-  adresse: String,
+  ville: String,
   personne: Number,
   prix: Number,
   // image: String,
