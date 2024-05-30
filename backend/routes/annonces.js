@@ -65,9 +65,9 @@ router.delete("/delete", async (req, res) => {
   console.log("USER", user._id);
 
   const annonce = await Annonce.findOne({ userId: user._id });
-  console.log("annonce", annonce);
   if (annonce) {
-    await Annonce.deleteOne({ annonceId: annonce._id });
+    await Annonce.deleteOne({ _id: annonce._id });
+    console.log(annonce._id);
 
     res.json({
       result: true,
@@ -75,6 +75,28 @@ router.delete("/delete", async (req, res) => {
       // annonceId: annonce._id,
     });
   }
+});
+
+//mesAnnonce:
+
+router.get("/mesAnnonces", async (req, res) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+
+  const user = await User.findOne({ token: token });
+
+  if (!user) {
+    res.json({ result: false, error: "Utilisateur non trouvé" });
+    return;
+  }
+
+  Annonce.find({ userId: user._id })
+    .then((annonces) => {
+      res.json({ result: true, data: annonces });
+    })
+    .catch((error) => {
+      res.json({ result: false, error: error.message });
+    });
 });
 
 module.exports = router;

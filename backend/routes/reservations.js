@@ -5,7 +5,7 @@ const Annonce = require("../models/annonces");
 const User = require("../models/users");
 const Reservation = require("../models/reservations");
 
-router.post("/add", async (req, res) => {
+router.post("/addResa", async (req, res) => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
   const annonceId = req.body.annonceId;
@@ -21,7 +21,6 @@ router.post("/add", async (req, res) => {
     res.json({ result: false, error: "Champs manquants ou vides" });
     return;
   }
-
   const user = await User.findOne({ token: token });
   const annonce = await Annonce.findById({ _id: annonceId });
 
@@ -34,10 +33,12 @@ router.post("/add", async (req, res) => {
   }
 
   const newReservation = new Reservation({
+    titre: req.body.titre,
     date: req.body.date,
     heureDebut: req.body.heureDebut,
     heureFin: req.body.heureFin,
     personne: req.body.personne,
+    ville: req.body.ville,
     prix: req.body.prix,
     annonceId: annonceId,
     userId: user._id,
@@ -53,7 +54,7 @@ router.post("/add", async (req, res) => {
     });
 });
 
-router.get("/reservation", async (req, res) => {
+router.get("/", async (req, res) => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
 
