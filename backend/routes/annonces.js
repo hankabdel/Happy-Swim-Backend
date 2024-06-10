@@ -38,7 +38,6 @@ router.post("/add", async (req, res) => {
 
   newAnnonce.save().then((data) => {
     res.json({ result: true, data: data });
-    console.log("*********************", "coucou", "**********************");
   });
 });
 
@@ -67,7 +66,6 @@ router.delete("/delete", async (req, res) => {
   const annonce = await Annonce.findOne({ userId: user._id });
   if (annonce) {
     await Annonce.deleteOne({ _id: annonce._id });
-    console.log(annonce._id);
 
     res.json({
       result: true,
