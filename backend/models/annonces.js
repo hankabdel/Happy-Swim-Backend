@@ -6,7 +6,6 @@ const connectionString = mongoose.Schema({
   ville: String,
   personne: Number,
   prix: Number,
-  // image: String,
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "users" },
 });
 
