@@ -91,5 +91,37 @@ router.get("/", async (req, res) => {
     });
 });
 
+router.delete("/:id", async (req, res) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (!token) {
+    res.json({ result: false, error: "Token manquant" });
+    return;
+  }
+
+  const user = await User.findOne({ token: token });
+
+  if (!user) {
+    res.json({ result: false, error: "Utilisateur non trouvé" });
+    return;
+  }
+
+  Reservation.findOneAndDelete({ _id: req.params.id, userId: user._id })
+    .then((deletedReservation) => {
+      if (!deletedReservation) {
+        res.json({
+          result: false,
+          error: "Réservation non trouvée ou non autorisée",
+        });
+        return;
+      }
+      res.json({ result: true, data: deletedReservation });
+    })
+    .catch((error) => {
+      res.json({ result: false, error: error.message });
+    });
+});
+
 // Exportation du routeur pour être utilisé dans d'autres parties de l'application
 module.exports = router;
