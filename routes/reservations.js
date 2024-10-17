@@ -6,7 +6,7 @@ const Reservation = require("../models/reservations");
 const authenticateToken = require("../middleware/authentification"); // Middleware pour vérifier le token JWT
 
 // Route pour ajouter une nouvelle réservation
-router.post("/addReservation", authenticateToken, async (req, res) => {
+router.post("/", authenticateToken, async (req, res) => {
   const annonceId = req.body.annonceId;
 
   // Vérification que toutes les propriétés nécessaires sont présentes dans le corps de la requête

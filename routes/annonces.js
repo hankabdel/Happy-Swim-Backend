@@ -6,7 +6,7 @@ const User = require("../models/users");
 const authenticateToken = require("../middleware/authentification"); // Import du middleware
 
 // Route pour ajouter une nouvelle annonce
-router.post("/addAnnonces", authenticateToken, async (req, res) => {
+router.post("/", authenticateToken, async (req, res) => {
   if (
     !checkBody(req.body, [
       "titre",
@@ -45,7 +45,7 @@ router.post("/addAnnonces", authenticateToken, async (req, res) => {
 });
 
 // Route pour récupérer toutes les annonces
-router.get("/recoverAnnonces", async (req, res) => {
+router.get("/", async (req, res) => {
   try {
     const data = await Annonce.find();
     res.json({ result: true, data: data });
@@ -56,7 +56,7 @@ router.get("/recoverAnnonces", async (req, res) => {
 
 // Route pour supprimer une annonce
 
-router.delete("/deleteAnnonces/:id", authenticateToken, async (req, res) => {
+router.delete("/:id", authenticateToken, async (req, res) => {
   try {
     const annonceId = req.params.id;
     if (!annonceId) {
@@ -89,7 +89,7 @@ router.delete("/deleteAnnonces/:id", authenticateToken, async (req, res) => {
 //mesAnnonce:
 
 // Route pour récupérer les annonces de l'utilisateur connecté
-router.get("/mesAnnonces", authenticateToken, async (req, res) => {
+router.get("/", authenticateToken, async (req, res) => {
   try {
     const annonces = await Annonce.find({ userId: req.user._id });
     res.json({ result: true, data: annonces });
