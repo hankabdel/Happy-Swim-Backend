@@ -2,7 +2,6 @@ var express = require("express");
 var router = express.Router();
 const { checkBody } = require("../modules/checkBody");
 const Annonce = require("../models/annonces");
-const User = require("../models/users");
 const authenticateToken = require("../middleware/authentification"); // Import du middleware
 
 // Route pour ajouter une nouvelle annonce
@@ -53,8 +52,6 @@ router.get("/", async (req, res) => {
     res.status(500).json({ result: false, error: error.message });
   }
 });
-
-// Route pour supprimer une annonce
 
 router.delete("/:id", authenticateToken, async (req, res) => {
   try {
