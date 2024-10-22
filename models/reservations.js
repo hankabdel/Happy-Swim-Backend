@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const connectionString = mongoose.Schema({
+const reservationString = mongoose.Schema({
   titre: String,
   date: Date,
   heureDebut: String,
@@ -12,6 +12,6 @@ const connectionString = mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "users" },
 });
 
-const Reservation = mongoose.model("reservations", connectionString);
+const Reservation = mongoose.model("reservations", reservationString);
 
 module.exports = Reservation;

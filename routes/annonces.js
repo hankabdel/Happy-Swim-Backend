@@ -2,10 +2,12 @@ var express = require("express");
 var router = express.Router();
 const { checkBody } = require("../modules/checkBody");
 const Annonce = require("../models/annonces");
-const authenticateToken = require("../middleware/authentification"); // Import du middleware
+const User = require("../models/users");
 
 // Route pour ajouter une nouvelle annonce
-router.post("/", authenticateToken, async (req, res) => {
+router.post("/", async (req, res) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
   if (
     !checkBody(req.body, [
       "titre",
@@ -24,14 +26,15 @@ router.post("/", authenticateToken, async (req, res) => {
     });
   }
 
-  // Création d'une nouvelle annonce avec les données du corps de la requête et l'ID de l'utilisateur
+  const user = await User.findOne({ token: token });
+
   const newAnnonce = new Annonce({
     titre: req.body.titre,
     description: req.body.description,
     personne: req.body.personne,
     ville: req.body.ville,
     prix: req.body.prix,
-    userId: req.user._id,
+    userId: user._id,
   });
 
   // Sauvegarde de l'annonce dans la base de données et envoi de la réponse au client
@@ -53,46 +56,86 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.delete("/:id", authenticateToken, async (req, res) => {
+router.delete("/", async (req, res) => {
   try {
-    const annonceId = req.params.id;
-    if (!annonceId) {
-      return res
-        .status(400)
-        .json({ result: false, message: "ID d'annonce non fourni" });
-    }
-
-    const annonce = await Annonce.findOne({
-      _id: annonceId,
-      userId: req.user._id,
-    });
-    if (!annonce) {
-      console.log(
-        `Tentative de suppression d'une annonce non trouvée ou non autorisée pour l'utilisateur ${req.user._id}`
-      );
-      return res.status(404).json({
+    // Vérifier la présence de l'en-tête Authorization
+    const authHeader = req.headers["authorization"];
+    if (!authHeader) {
+      return res.status(401).json({
         result: false,
-        message: "Annonce non trouvée ou non autorisée",
+        message: "Aucun jeton d'authentification fourni",
       });
     }
 
-    await Annonce.deleteOne({ _id: annonceId });
-    res.json({ result: true, message: "Annonce supprimée" });
+    // Extraire le token
+    const token = authHeader.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({
+        result: false,
+        message: "Format du jeton incorrect",
+      });
+    }
+
+    // Trouver l'utilisateur avec ce token
+    const user = await User.findOne({ token });
+    if (!user) {
+      return res.status(404).json({
+        result: false,
+        message: "Utilisateur non trouvé",
+      });
+    }
+
+    // Trouver l'annonce correspondant à l'utilisateur
+    const annonce = await Annonce.findOne({ userId: user._id });
+    if (!annonce) {
+      return res.status(404).json({
+        result: false,
+        message: "Aucune annonce trouvée pour cet utilisateur",
+      });
+    }
+
+    // Supprimer l'annonce
+    await Annonce.deleteOne({ _id: annonce._id });
+
+    // Réponse après suppression
+    return res.status(200).json({
+      result: true,
+      message: "Annonce supprimée avec succès",
+    });
   } catch (error) {
-    res.status(500).json({ result: false, error: error.message });
+    // Gestion des erreurs inattendues
+    return res.status(500).json({
+      result: false,
+      message: "Une erreur s'est produite lors de la suppression de l'annonce",
+      error: error.message,
+    });
   }
 });
 
 //mesAnnonce:
-
 // Route pour récupérer les annonces de l'utilisateur connecté
-router.get("/", authenticateToken, async (req, res) => {
-  try {
-    const annonces = await Annonce.find({ userId: req.user._id });
-    res.json({ result: true, data: annonces });
-  } catch (error) {
-    res.status(500).json({ result: false, error: error.message });
+router.get("/mesAnnonces", async (req, res) => {
+  // Récupération du token d'autorisation depuis les en-têtes de la requête
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+
+  // Recherche de l'utilisateur dans la base de données par le token
+  const user = await User.findOne({ token: token });
+
+  // Si l'utilisateur n'est pas trouvé, renvoyer une erreur
+  if (!user) {
+    res.json({ result: false, error: "Utilisateur non trouvé" });
+    return;
   }
+
+  // Recherche des annonces associées à l'utilisateur
+  Annonce.find({ userId: user._id })
+    .then((annonces) => {
+      res.json({ result: true, data: annonces });
+    })
+    .catch((error) => {
+      res.json({ result: false, error: error.message });
+    });
 });
 
 // Route pour rechercher des annonces par ville
