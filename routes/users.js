@@ -7,8 +7,12 @@ const bcrypt = require("bcrypt");
 
 // Route pour l'inscription des utilisateurs
 router.post("/signup", async (req, res) => {
-  if (!checkBody(req.body, ["prenom", "nom", "email", "password"])) {
-    return res.json({ result: false, error: "Champs manquants ou vides" });
+  if (!checkBody(req.body, ["firstname", "lastname", "email", "password"])) {
+    res.json({
+      result: false,
+      error: "Tous les champs doivent être renseignés",
+    });
+    return;
   }
 
   try {
@@ -16,55 +20,54 @@ router.post("/signup", async (req, res) => {
     if (existingUser) {
       return res.json({
         result: false,
-        error: "L'utilisateur est déjà enregistré",
+        error: "Utilisateur déjà existant",
       });
     }
 
-    const hash = await bcrypt.hash(req.body.password, 10);
-
+    const hashedPassword = await bcrypt.hash(req.body.password, 10);
     const newUser = new User({
       prenom: req.body.prenom,
       nom: req.body.nom,
       email: req.body.email,
-      password: hash,
-      token: token,
+      password: hashedPassword,
+      token: uid2(32),
     });
 
     await newUser.save();
-    res.json({ result: true, token: newUser.token });
+    res.json({ result: true, user: newUser });
   } catch (error) {
-    res.status(500).json({ error: "Erreur serveur" });
+    res.status(500).json({ error: "Erreur interne" });
   }
 });
 
 // Route pour la connexion des utilisateurs
-router.post("/signin", (req, res) => {
-  // Vérification que toutes les propriétés nécessaires sont présentes dans le corps de la requête
+router.post("/signin", async (req, res) => {
   if (!checkBody(req.body, ["email", "password"])) {
-    res.json({ result: false, error: "Champs manquants ou vides" });
-    return;
+    return res
+      .status(400)
+      .json({ result: false, error: "Champs manquants ou vides" });
   }
 
-  // Recherche de l'utilisateur dans la base de données par email
-  User.findOne({ email: req.body.email }).then((data) => {
-    // Vérification que l'utilisateur est trouvé et que le mot de passe est correct
-    if (data && bcrypt.compareSync(req.body.password, data.password)) {
-      res.json({
+  try {
+    const user = await User.findOne({ email: req.body.email });
+
+    if (user && bcrypt.compareSync(req.body.password, user.password)) {
+      res.status(200).json({
         result: true,
-        token: data.token,
-        prenom: data.prenom,
-        nom: data.nom,
-        email: data.email,
+        token: user.token,
+        prenom: user.prenom,
+        nom: user.nom,
+        email: user.email,
       });
     } else {
-      // Si l'email n'est pas trouvé ou le mot de passe est incorrect, renvoyer une erreur
-      res.json({
+      res.status(401).json({
         result: false,
-        error: "Email introuvable ou mot de passe erroné",
+        error: "Email introuvable ou mot de passe incorrect",
       });
     }
-  });
+  } catch (error) {
+    res.status(500).json({ result: false, error: "Erreur interne du serveur" });
+  }
 });
-
 // Exportation du routeur pour être utilisé dans d'autres parties de l'application
 module.exports = router;

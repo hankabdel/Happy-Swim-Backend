@@ -15,8 +15,6 @@ router.post("/", async (req, res) => {
   if (!token) {
     return res.status(400).json({ result: false, error: "Token manquant" });
   }
-  console.log("------>Token", token); // Log pour voir le token
-
   // Vérification des champs obligatoires
   if (
     !checkBody(req.body, [
@@ -38,14 +36,9 @@ router.post("/", async (req, res) => {
   try {
     // Recherche de l'utilisateur et de l'annonce
     const user = await User.findOne({ token: token });
-    console.log("Tokenfindone----->", token); // Ajoutez ceci pour voir le token envoyé
     const annonce = await Annonce.findById({ _id: annonceId });
-    console.log("User trouvé:", user); // Log pour voir si l'utilisateur a été trouvé
 
     if (!user || !annonce) {
-      console.log(annonce, "hello annonce");
-      console.log(user, "hello user");
-
       return res.status(404).json({
         result: false,
         error: "Utilisateur ou annonce non trouvé ou non autorisé",
@@ -54,14 +47,14 @@ router.post("/", async (req, res) => {
 
     // Création de la nouvelle réservation
     const newReservation = new Reservation({
-      titre,
-      date,
-      heureDebut,
-      heureFin,
-      personne,
-      ville,
-      prix,
-      annonceId,
+      titre: req.body.titre,
+      date: req.body.date,
+      heureDebut: req.body.heureDebut,
+      heureFin: req.body.heureFin,
+      personne: req.body.personne,
+      ville: req.body.ville,
+      prix: req.body.prix,
+      annonceId: annonceId,
       userId: user._id,
     });
 
@@ -98,15 +91,32 @@ router.get("/", async (req, res) => {
 
 // Route pour supprimer une réservation
 router.delete("/:id", async (req, res) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+
   try {
+    // Vérification du token
+    if (!token) {
+      return res.status(400).json({ result: false, error: "Token manquant" });
+    }
+
+    // Recherche de l'utilisateur par token
+    const user = await User.findOne({ token: token });
+    if (!user) {
+      return res.status(401).json({
+        result: false,
+        error: "Utilisateur non trouvé ou non autorisé",
+      });
+    }
+
     // Recherche et suppression de la réservation par ID et userId
     const deletedReservation = await Reservation.findOneAndDelete({
       _id: req.params.id,
-      userId: req.user.id,
+      userId: user._id,
     });
 
     if (!deletedReservation) {
-      return res.json({
+      return res.status(404).json({
         result: false,
         error: "Réservation non trouvée ou non autorisée",
       });
@@ -114,6 +124,7 @@ router.delete("/:id", async (req, res) => {
 
     res.json({ result: true, data: deletedReservation });
   } catch (error) {
+    console.error("Erreur lors de la suppression:", error); // Ajout d'un log pour déboguer
     res.status(500).json({ result: false, error: error.message });
   }
 });
