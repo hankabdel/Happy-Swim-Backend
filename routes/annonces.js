@@ -3,15 +3,11 @@ var router = express.Router();
 const { checkBody } = require("../modules/checkBody");
 const Annonce = require("../models/annonces");
 const User = require("../models/users");
-const cloudinary = require("../cloudinaryConfig");
-const uniqid = require("uniqid");
-const fs = require("fs");
 
 // Route pour ajouter une nouvelle annonce
 router.post("/", async (req, res) => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
-
   if (
     !checkBody(req.body, [
       "titre",
@@ -31,55 +27,22 @@ router.post("/", async (req, res) => {
   }
 
   const user = await User.findOne({ token: token });
-  if (!user) {
-    return res
-      .status(401)
-      .json({ result: false, error: "Utilisateur non trouvé ou non autorisé" });
-  }
 
+  const newAnnonce = new Annonce({
+    titre: req.body.titre,
+    description: req.body.description,
+    personne: req.body.personne,
+    ville: req.body.ville,
+    prix: req.body.prix,
+    userId: user._id,
+  });
+
+  // Sauvegarde de l'annonce dans la base de données et envoi de la réponse au client
   try {
-    // Vérifiez si un fichier a été téléchargé
-    if (!req.files || Object.keys(req.files).length === 0) {
-      return res
-        .status(400)
-        .json({ result: false, error: "Aucun fichier téléchargé" });
-    }
-
-    const image = req.files.image;
-    const photoPath = `./tmp/${uniqid()}.jpg`;
-
-    // Déplacez le fichier téléchargé vers un dossier temporaire
-    await image.mv(photoPath);
-
-    // Téléchargez l'image sur Cloudinary
-    const result = await cloudinary.uploader.upload(photoPath, {
-      folder: "annonces",
-    });
-
-    // Supprimez le fichier temporaire après le téléchargement
-    fs.unlinkSync(photoPath);
-
-    const newAnnonce = new Annonce({
-      titre: req.body.titre,
-      description: req.body.description,
-      personne: req.body.personne,
-      ville: req.body.ville,
-      prix: req.body.prix,
-      imageUrl: result.secure_url, // Ajoutez l'URL de l'image téléchargée
-      userId: user._id,
-    });
-
     const savedAnnonce = await newAnnonce.save();
-    res.status(201).json({ result: true, data: savedAnnonce });
+    res.json({ result: true, data: savedAnnonce });
   } catch (error) {
-    console.error(
-      "Erreur lors du téléchargement de l'image sur Cloudinary:",
-      error
-    );
-    res.status(500).json({
-      result: false,
-      error: "Erreur lors du téléchargement de l'image",
-    });
+    res.status(500).json({ result: false, error: error.message });
   }
 });
 
