@@ -3,6 +3,7 @@ var router = express.Router();
 const { checkBody } = require("../modules/checkBody");
 const Annonce = require("../models/annonces");
 const User = require("../models/users");
+const cloudinary = require("../cloudinaryConfig");
 
 // Route pour ajouter une nouvelle annonce
 router.post("/", async (req, res) => {
@@ -27,22 +28,42 @@ router.post("/", async (req, res) => {
   }
 
   const user = await User.findOne({ token: token });
+  if (!user) {
+    return res
+      .status(401)
+      .json({ result: false, error: "Utilisateur non trouvé ou non autorisé" });
+  }
 
-  const newAnnonce = new Annonce({
-    titre: req.body.titre,
-    description: req.body.description,
-    personne: req.body.personne,
-    ville: req.body.ville,
-    prix: req.body.prix,
-    userId: user._id,
-  });
-
-  // Sauvegarde de l'annonce dans la base de données et envoi de la réponse au client
   try {
+    // Téléchargez l'image sur Cloudinary
+    const result = await cloudinary.uploader.upload(req.body.image, {
+      folder: "annonces",
+    });
+
+    const newAnnonce = new Annonce({
+      titre: req.body.titre,
+      description: req.body.description,
+      personne: req.body.personne,
+      ville: req.body.ville,
+      prix: req.body.prix,
+      imageUrl: result.secure_url,
+      userId: user._id,
+    });
+
+    // Sauvegarde de l'annonce dans la base de données et envoi de la réponse au client
     const savedAnnonce = await newAnnonce.save();
-    res.json({ result: true, data: savedAnnonce });
+    res.status(201).json({ result: true, data: savedAnnonce });
   } catch (error) {
-    res.status(500).json({ result: false, error: error.message });
+    console.error(
+      "Erreur lors du téléchargement de l'image sur Cloudinary:",
+      error
+    );
+    res
+      .status(500)
+      .json({
+        result: false,
+        error: "Erreur lors du téléchargement de l'image",
+      });
   }
 });
 
