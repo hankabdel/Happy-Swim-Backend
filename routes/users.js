@@ -7,7 +7,7 @@ const bcrypt = require("bcrypt");
 
 // Route pour l'inscription des utilisateurs
 router.post("/signup", async (req, res) => {
-  if (!checkBody(req.body, ["firstname", "lastname", "email", "password"])) {
+  if (!checkBody(req.body, ["prenom", "nom", "email", "password"])) {
     res.json({
       result: false,
       error: "Tous les champs doivent être renseignés",
