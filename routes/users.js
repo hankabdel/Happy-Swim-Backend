@@ -34,7 +34,7 @@ router.post("/signup", async (req, res) => {
     });
 
     await newUser.save();
-    res.json({ result: true, user: newUser });
+    res.json({ result: true, token: newUser.token, user: newUser });
   } catch (error) {
     res.status(500).json({ error: "Erreur interne" });
   }
