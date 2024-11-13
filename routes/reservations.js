@@ -8,6 +8,7 @@ const Reservation = require("../models/reservations");
 // Route pour ajouter une nouvelle réservation
 router.post("/", async (req, res) => {
   const authHeader = req.headers["authorization"];
+  console.log("Authorization Header: ", authHeader); // Vérification
   const token = authHeader && authHeader.split(" ")[1];
 
   // Vérification du token
