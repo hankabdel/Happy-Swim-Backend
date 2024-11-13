@@ -9,12 +9,16 @@ const Reservation = require("../models/reservations");
 router.post("/", async (req, res) => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
-  const annonceId = req.body.annonceId;
 
   // Vérification du token
-  if (!token) {
-    return res.status(400).json({ result: false, error: "Token manquant" });
+  const user = await getUserFromToken(token);
+  if (!user) {
+    return res.status(401).json({
+      result: false,
+      error: "Token invalide ou utilisateur introuvable",
+    });
   }
+
   // Vérification des champs obligatoires
   if (
     !checkBody(req.body, [
@@ -34,18 +38,23 @@ router.post("/", async (req, res) => {
   }
 
   try {
-    // Recherche de l'utilisateur et de l'annonce
-    const user = await User.findOne({ token: token });
-    const annonce = await Annonce.findById({ _id: annonceId });
+    // Recherche de l'annonce
+    const annonce = await Annonce.findById(req.body.annonceId);
+    if (!annonce) {
+      return res
+        .status(404)
+        .json({ result: false, error: "Annonce introuvable" });
+    }
 
-    if (!user || !annonce) {
-      return res.status(404).json({
+    // Vérification des heures
+    if (req.body.heureDebut >= req.body.heureFin) {
+      return res.status(400).json({
         result: false,
-        error: "Utilisateur ou annonce non trouvé ou non autorisé",
+        error: "L'heure de début doit être avant l'heure de fin",
       });
     }
 
-    // Création de la nouvelle réservation
+    // Création de la réservation
     const newReservation = new Reservation({
       titre: req.body.titre,
       date: req.body.date,
@@ -54,15 +63,13 @@ router.post("/", async (req, res) => {
       personne: req.body.personne,
       ville: req.body.ville,
       prix: req.body.prix,
-      annonceId: annonceId,
+      annonceId: req.body.annonceId,
       userId: user._id,
     });
 
-    // Sauvegarde de la réservation
     const savedReservation = await newReservation.save();
     return res.status(201).json({ result: true, data: savedReservation });
   } catch (error) {
-    // Gestion des erreurs
     return res.status(500).json({ result: false, error: error.message });
   }
 });
