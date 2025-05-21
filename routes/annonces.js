@@ -3,16 +3,11 @@ var router = express.Router();
 const { checkBody } = require("../modules/checkBody");
 const Annonce = require("../models/annonces");
 const User = require("../models/users");
-const cloudinary = require("../config/cloudinary");
-const fileUpload = require("express-fileupload");
-
-router.use(fileUpload());
 
 // Route pour ajouter une nouvelle annonce
 router.post("/", async (req, res) => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
-
   if (
     !checkBody(req.body, [
       "titre",
@@ -21,9 +16,9 @@ router.post("/", async (req, res) => {
       "personne",
       "prix",
     ]) ||
-    req.body.prix <= 0 ||
-    typeof req.body.titre !== "string" ||
-    req.body.titre.trim() === ""
+    req.body.prix <= 0 || // Vérifie que le prix est supérieur à 0
+    typeof req.body.titre !== "string" || // Vérifie que le titre est une chaîne
+    req.body.titre.trim() === "" // Vérifie que le titre n'est pas vide
   ) {
     return res.json({
       result: false,
@@ -31,37 +26,22 @@ router.post("/", async (req, res) => {
     });
   }
 
+  const user = await User.findOne({ token: token });
+
+  const newAnnonce = new Annonce({
+    titre: req.body.titre,
+    description: req.body.description,
+    personne: req.body.personne,
+    ville: req.body.ville,
+    prix: req.body.prix,
+    userId: user._id,
+  });
+
+  // Sauvegarde de l'annonce dans la base de données et envoi de la réponse au client
   try {
-    const user = await User.findOne({ token: token });
-    if (!user) {
-      return res.json({ result: false, error: "Utilisateur non trouvé" });
-    }
-
-    let imageUrl = "";
-    if (req.files && req.files.image) {
-      const result = await cloudinary.uploader.upload(
-        req.files.image.tempFilePath,
-        {
-          folder: "happyswim",
-        }
-      );
-      imageUrl = result.secure_url;
-    }
-
-    const newAnnonce = new Annonce({
-      titre: req.body.titre,
-      description: req.body.description,
-      personne: req.body.personne,
-      ville: req.body.ville,
-      prix: req.body.prix,
-      imageUrl: imageUrl,
-      userId: user._id,
-    });
-
     const savedAnnonce = await newAnnonce.save();
     res.json({ result: true, data: savedAnnonce });
   } catch (error) {
-    console.error("Erreur lors de la création de l'annonce:", error);
     res.status(500).json({ result: false, error: error.message });
   }
 });
