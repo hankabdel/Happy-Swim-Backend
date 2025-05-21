@@ -6,6 +6,7 @@ const annonceSchema = mongoose.Schema({
   ville: String,
   personne: Number,
   prix: Number,
+  imageUrl: String,
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "users" },
 });
 
